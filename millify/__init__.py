@@ -23,6 +23,13 @@ def millify(n, precision=0, drop_nulls=True, prefixes=[]):
     millidx = max(0, min(len(millnames) - 1,
                          int(math.floor(0 if n == 0 else math.log10(abs(n)) / 3))))
     result = '{:.{precision}f}'.format(n / 10**(3 * millidx), precision=precision)
+    # Rounding to ``precision`` digits can push the mantissa up to 1000
+    # (e.g. 999999 -> "1000k"); carry it into the next unit so the result
+    # stays below 1000 ("1M") while a larger suffix is available.
+    if abs(float(result)) >= 1000 and millidx < len(millnames) - 1:
+        millidx += 1
+        result = '{:.{precision}f}'.format(n / 10**(3 * millidx),
+                                           precision=precision)
     if drop_nulls:
         result = remove_exponent(Decimal(result))
     return '{0}{dx}'.format(result, dx=millnames[millidx])
